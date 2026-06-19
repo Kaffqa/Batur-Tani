@@ -9,8 +9,16 @@ import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import FarmerDashboard from '@/pages/farmer/FarmerDashboard';
+import CommoditiesPage from '@/pages/farmer/CommoditiesPage';
+import CommodityFormPage from '@/pages/farmer/CommodityFormPage';
+import FarmerOrdersPage from '@/pages/farmer/FarmerOrdersPage';
 import BuyerDashboard from '@/pages/buyer/BuyerDashboard';
 import MarketplacePage from '@/pages/buyer/MarketplacePage';
+import CommodityDetailPage from '@/pages/buyer/CommodityDetailPage';
+import CheckoutPage from '@/pages/buyer/CheckoutPage';
+import BuyerOrdersPage from '@/pages/buyer/BuyerOrdersPage';
+import BuyerHistoryPage from '@/pages/buyer/BuyerHistoryPage';
+import FinancePage from '@/pages/farmer/FinancePage';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // ------------------------------------------------------------
@@ -98,6 +106,48 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/farmer/commodities"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <CommoditiesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/commodities/new"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <CommodityFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/commodities/:id/edit"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <CommodityFormPage />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/farmer/orders"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <FarmerOrdersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/farmer/finance"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <FinancePage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Buyer Routes */}
       <Route
@@ -113,6 +163,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['buyer']}>
             <MarketplacePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/buyer/marketplace/:id"
+        element={
+          <ProtectedRoute allowedRoles={['buyer']}>
+            <CommodityDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/buyer/checkout/:commodityId"
+        element={
+          <ProtectedRoute allowedRoles={['buyer']}>
+            <CheckoutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/buyer/orders"
+        element={
+          <ProtectedRoute allowedRoles={['buyer']}>
+            <BuyerOrdersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/buyer/history"
+        element={
+          <ProtectedRoute allowedRoles={['buyer']}>
+            <BuyerHistoryPage />
           </ProtectedRoute>
         }
       />

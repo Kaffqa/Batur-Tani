@@ -184,6 +184,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             data: {
               full_name: fullName,
               role,
+              business_name: businessName,
             },
           },
         });
@@ -195,25 +196,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!authData.user) {
         throw new Error('Pendaftaran gagal. Silakan coba lagi.');
       }
-
-      // 2. Insert the profile row
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        role,
-        full_name: fullName,
-        business_name: businessName,
-        phone: '',
-        address: '',
-      });
-
-      if (profileError) {
-        console.error(
-          '[AuthContext] Profile creation failed:',
-          profileError.message
-        );
-        // Don't throw here — the auth user was created successfully.
-        // The profile can be completed later in onboarding.
-      }
+      
+      // Note: Profile creation is handled automatically by a database trigger 
+      // (handle_new_user) in Supabase.
     },
     []
   );

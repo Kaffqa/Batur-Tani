@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Thermometer, Droplets, CloudRain, Wind, Sprout, Cloud } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, Wind, Sprout, Cloud, MapPin, Check, X } from 'lucide-react';
 import { fetchCurrentWeather } from '@/lib/weather';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface WeatherWidgetProps {
   latitude: number;
   longitude: number;
+  onUpdateLocation?: (lat: number, lon: number) => void;
 }
 
 interface WeatherData {
@@ -80,10 +81,25 @@ function getSoilMoistureSeverity(s: number): 'good' | 'moderate' | 'bad' {
 export default function WeatherWidget({
   latitude,
   longitude,
+  onUpdateLocation,
 }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState<string>('Memuat lokasi...');
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editLat, setEditLat] = useState(latitude.toString());
+  const [editLon, setEditLon] = useState(longitude.toString());
+
+  const handleSaveLocation = () => {
+    const newLat = parseFloat(editLat);
+    const newLon = parseFloat(editLon);
+    if (!isNaN(newLat) && !isNaN(newLon) && onUpdateLocation) {
+      onUpdateLocation(newLat, newLon);
+    }
+    setIsEditing(false);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -105,7 +121,19 @@ export default function WeatherWidget({
       }
     }
 
+    async function loadLocation() {
+      try {
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=id`);
+        const data = await res.json();
+        const city = data.city || data.locality || data.principalSubdivision || 'Area Tidak Dikenali';
+        if (!cancelled) setLocationName(city);
+      } catch (err) {
+        if (!cancelled) setLocationName('Area Tidak Dikenali');
+      }
+    }
+
     loadWeather();
+    loadLocation();
     return () => {
       cancelled = true;
     };
@@ -152,14 +180,61 @@ export default function WeatherWidget({
   return (
     <div className="rounded-2xl bg-gradient-to-br from-blue-900/40 to-emerald-900/40 border border-slate-700/50 overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/5">
-        <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-          <Cloud className="h-4 w-4 text-cyan-400" />
-          Kondisi Cuaca Saat Ini
-        </h3>
-        <p className="text-xs text-slate-500 mt-0.5">
-          {latitude.toFixed(4)}°, {longitude.toFixed(4)}°
-        </p>
+      <div className="px-6 py-4 border-b border-white/5 flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <Cloud className="h-4 w-4 text-cyan-400" />
+            Kondisi Cuaca Saat Ini
+          </h3>
+          {isEditing ? (
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="number"
+                step="0.0001"
+                value={editLat}
+                onChange={(e) => setEditLat(e.target.value)}
+                className="w-24 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-emerald-500 outline-none"
+                placeholder="Latitude"
+              />
+              <input
+                type="number"
+                step="0.0001"
+                value={editLon}
+                onChange={(e) => setEditLon(e.target.value)}
+                className="w-24 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-emerald-500 outline-none"
+                placeholder="Longitude"
+              />
+              <button onClick={handleSaveLocation} className="p-1 bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30">
+                <Check className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setIsEditing(false)} className="p-1 bg-slate-700/50 text-slate-400 rounded hover:bg-slate-700">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm font-medium text-slate-300 mt-1 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-emerald-400" />
+                {locationName}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5 ml-5">
+                {latitude.toFixed(4)}°, {longitude.toFixed(4)}°
+              </p>
+            </div>
+          )}
+        </div>
+        {!isEditing && onUpdateLocation && (
+          <button 
+            onClick={() => {
+              setEditLat(latitude.toString());
+              setEditLon(longitude.toString());
+              setIsEditing(true);
+            }}
+            className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors underline"
+          >
+            Ubah
+          </button>
+        )}
       </div>
 
       {/* Metrics grid */}

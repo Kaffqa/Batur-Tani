@@ -3,7 +3,8 @@
 // Browse and search available commodities from farmers
 // ============================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   SlidersHorizontal,
@@ -14,192 +15,52 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import CommodityCard from '@/components/dashboard/CommodityCard';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { supabase } from '@/lib/supabase';
 import type { Commodity, CommodityCategory } from '@/types';
-
-// Mock data — realistic Indonesian agricultural products
-const mockCommodities: Commodity[] = [
-  {
-    id: '1',
-    farmer_id: 'f1',
-    farmer: {
-      id: 'f1',
-      role: 'farmer',
-      full_name: 'Pak Ahmad Yusuf',
-      business_name: 'Kebun Sejahtera',
-      phone: '081234567890',
-      address: 'Desa Batur, Kab. Banjarnegara',
-      latitude: -7.2321,
-      longitude: 109.9029,
-      bank_account: null,
-      avatar_url: null,
-      created_at: '2026-01-15',
-    },
-    name: 'Tomat Cherry Premium',
-    category: 'hortikultura',
-    description:
-      'Tomat cherry organik dataran tinggi Batur, ditanam di ketinggian 1.500 mdpl. Rasa manis alami dengan kadar gula tinggi, cocok untuk salad premium dan garnish restoran fine dining.',
-    price_per_unit: 35000,
-    unit: 'kg',
-    stock_projection: 500,
-    harvest_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    image_url: null,
-    is_available: true,
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    farmer_id: 'f1',
-    farmer: {
-      id: 'f1',
-      role: 'farmer',
-      full_name: 'Pak Ahmad Yusuf',
-      business_name: 'Kebun Sejahtera',
-      phone: '081234567890',
-      address: 'Desa Batur, Kab. Banjarnegara',
-      latitude: -7.2321,
-      longitude: 109.9029,
-      bank_account: null,
-      avatar_url: null,
-      created_at: '2026-01-15',
-    },
-    name: 'Kentang Granola',
-    category: 'hortikultura',
-    description:
-      'Kentang varietas Granola kualitas super dari dataran tinggi Dieng. Ukuran seragam, cocok untuk industri makanan olahan, restoran, dan katering skala besar.',
-    price_per_unit: 15000,
-    unit: 'kg',
-    stock_projection: 2000,
-    harvest_date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    image_url: null,
-    is_available: true,
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    farmer_id: 'f2',
-    farmer: {
-      id: 'f2',
-      role: 'farmer',
-      full_name: 'Bu Sri Lestari',
-      business_name: 'Peternakan Batur Jaya',
-      phone: '089876543210',
-      address: 'Desa Sumberejo, Kab. Banjarnegara',
-      latitude: -7.2115,
-      longitude: 109.8945,
-      bank_account: null,
-      avatar_url: null,
-      created_at: '2026-02-10',
-    },
-    name: 'Susu Sapi Segar',
-    category: 'susu',
-    description:
-      'Susu segar dari sapi perah Friesian Holstein, pemerahan pagi hari. Golden period 4 jam. Kadar lemak 3.8%, protein 3.2%. Wajib dijemput dengan pendingin.',
-    price_per_unit: 12000,
-    unit: 'liter',
-    stock_projection: 100,
-    harvest_date: new Date().toISOString().split('T')[0],
-    image_url: null,
-    is_available: true,
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    farmer_id: 'f3',
-    farmer: {
-      id: 'f3',
-      role: 'farmer',
-      full_name: 'Pak Hasan Basri',
-      business_name: 'Tani Makmur Dieng',
-      phone: '081298765432',
-      address: 'Desa Dieng Kulon, Kab. Banjarnegara',
-      latitude: -7.2091,
-      longitude: 109.9147,
-      bank_account: null,
-      avatar_url: null,
-      created_at: '2026-03-01',
-    },
-    name: 'Cabai Rawit Merah',
-    category: 'hortikultura',
-    description:
-      'Cabai rawit merah super pedas dari dataran tinggi Dieng. Tingkat kepedasan tinggi (100.000+ SHU), warna merah cerah, ideal untuk industri sambal dan restoran.',
-    price_per_unit: 80000,
-    unit: 'kg',
-    stock_projection: 300,
-    harvest_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    image_url: null,
-    is_available: true,
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '5',
-    farmer_id: 'f4',
-    farmer: {
-      id: 'f4',
-      role: 'farmer',
-      full_name: 'Pak Suryo Wibowo',
-      business_name: 'Petani Bawang Sejati',
-      phone: '081376543210',
-      address: 'Desa Pesurenan, Kab. Brebes',
-      latitude: -6.8724,
-      longitude: 109.0425,
-      bank_account: null,
-      avatar_url: null,
-      created_at: '2026-01-20',
-    },
-    name: 'Bawang Merah Brebes',
-    category: 'hortikultura',
-    description:
-      'Bawang merah kualitas ekspor dari Brebes. Kadar air rendah, daya simpan lama, aroma tajam khas. Cocok untuk industri bumbu masak dan kebutuhan restoran besar.',
-    price_per_unit: 45000,
-    unit: 'kg',
-    stock_projection: 800,
-    harvest_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    image_url: null,
-    is_available: true,
-    created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '6',
-    farmer_id: 'f2',
-    farmer: {
-      id: 'f2',
-      role: 'farmer',
-      full_name: 'Bu Sri Lestari',
-      business_name: 'Peternakan Batur Jaya',
-      phone: '089876543210',
-      address: 'Desa Sumberejo, Kab. Banjarnegara',
-      latitude: -7.2115,
-      longitude: 109.8945,
-      bank_account: null,
-      avatar_url: null,
-      created_at: '2026-02-10',
-    },
-    name: 'Yogurt Susu Segar',
-    category: 'susu',
-    description:
-      'Yogurt homemade dari susu sapi segar Batur. Tanpa pengawet, rasa plain natural. Cocok untuk restoran sehat, kafe, dan industri minuman.',
-    price_per_unit: 25000,
-    unit: 'liter',
-    stock_projection: 50,
-    harvest_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    image_url: null,
-    is_available: true,
-    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
 
 type SortOption = 'newest' | 'cheapest' | 'expensive' | 'stock';
 type CategoryFilter = 'all' | CommodityCategory;
 
 export default function MarketplacePage() {
+  const navigate = useNavigate();
+  const [commodities, setCommodities] = useState<Commodity[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showFilters, setShowFilters] = useState(false);
 
+  useEffect(() => {
+    fetchCommodities();
+  }, []);
+
+  const fetchCommodities = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('commodities')
+        .select(`
+          *,
+          farmer:profiles!commodities_farmer_id_fkey (
+            id, role, full_name, business_name, address
+          )
+        `)
+        .eq('is_available', true);
+
+      if (error) throw error;
+      setCommodities((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching commodities:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter & sort commodities
   const filteredCommodities = useMemo(() => {
-    let result = [...mockCommodities];
+    let result = [...commodities];
 
     // Search filter
     if (searchQuery.trim()) {
@@ -207,8 +68,8 @@ export default function MarketplacePage() {
       result = result.filter(
         (c) =>
           c.name.toLowerCase().includes(query) ||
-          c.description.toLowerCase().includes(query) ||
-          c.farmer?.business_name?.toLowerCase().includes(query)
+          (c.description && c.description.toLowerCase().includes(query)) ||
+          (c.farmer?.business_name && c.farmer.business_name.toLowerCase().includes(query))
       );
     }
 
@@ -216,9 +77,6 @@ export default function MarketplacePage() {
     if (categoryFilter !== 'all') {
       result = result.filter((c) => c.category === categoryFilter);
     }
-
-    // Only show available
-    result = result.filter((c) => c.is_available);
 
     // Sort
     switch (sortBy) {
@@ -240,7 +98,15 @@ export default function MarketplacePage() {
     }
 
     return result;
-  }, [searchQuery, categoryFilter, sortBy]);
+  }, [searchQuery, categoryFilter, sortBy, commodities]);
+
+  const handlePreOrder = (commodity: Commodity) => {
+    navigate(`/buyer/marketplace/${commodity.id}`);
+  };
+
+  if (loading) {
+    return <LoadingSpinner fullPage text="Memuat Marketplace..." />;
+  }
 
   return (
     <DashboardLayout>
@@ -431,7 +297,11 @@ export default function MarketplacePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredCommodities.map((commodity) => (
-              <CommodityCard key={commodity.id} commodity={commodity} />
+              <CommodityCard 
+                key={commodity.id} 
+                commodity={commodity} 
+                onPreOrder={handlePreOrder} 
+              />
             ))}
           </div>
         )}

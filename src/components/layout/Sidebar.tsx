@@ -24,17 +24,17 @@ interface MenuItem {
 }
 
 const farmerMenu: MenuItem[] = [
-  { label: 'Overview', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Komoditas', path: '/dashboard/commodities', icon: <Package className="h-5 w-5" /> },
-  { label: 'Pesanan', path: '/dashboard/orders', icon: <ShoppingCart className="h-5 w-5" /> },
-  { label: 'Cuaca', path: '/dashboard/weather', icon: <Cloud className="h-5 w-5" /> },
-  { label: 'Keuangan', path: '/dashboard/finance', icon: <Wallet className="h-5 w-5" /> },
+  { label: 'Overview', path: '/farmer', icon: <LayoutDashboard className="h-5 w-5" /> },
+  { label: 'Komoditas', path: '/farmer/commodities', icon: <Package className="h-5 w-5" /> },
+  { label: 'Pesanan', path: '/farmer/orders', icon: <ShoppingCart className="h-5 w-5" /> },
+  { label: 'Cuaca', path: '/farmer/weather', icon: <Cloud className="h-5 w-5" /> },
+  { label: 'Keuangan', path: '/farmer/finance', icon: <Wallet className="h-5 w-5" /> },
 ];
 
 const buyerMenu: MenuItem[] = [
-  { label: 'Marketplace', path: '/dashboard/marketplace', icon: <Store className="h-5 w-5" /> },
-  { label: 'Pesanan Saya', path: '/dashboard/orders', icon: <ClipboardCheck className="h-5 w-5" /> },
-  { label: 'Riwayat', path: '/dashboard/history', icon: <History className="h-5 w-5" /> },
+  { label: 'Marketplace', path: '/buyer/marketplace', icon: <Store className="h-5 w-5" /> },
+  { label: 'Pesanan Saya', path: '/buyer/orders', icon: <ClipboardCheck className="h-5 w-5" /> },
+  { label: 'Riwayat', path: '/buyer/history', icon: <History className="h-5 w-5" /> },
 ];
 
 export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
@@ -79,7 +79,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === '/dashboard'}
+              end={item.path === '/farmer' || item.path === '/buyer'}
               onClick={() => {
                 // Close on mobile after navigation
                 if (window.innerWidth < 1024) onToggle();
