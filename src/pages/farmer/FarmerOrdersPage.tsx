@@ -7,6 +7,7 @@ import OrderStatusBadge from '@/components/dashboard/OrderStatusBadge';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 export default function FarmerOrdersPage() {
   const { user } = useAuth();
@@ -48,11 +49,11 @@ export default function FarmerOrdersPage() {
         .eq('id', orderId);
 
       if (error) throw error;
-      alert('Status pesanan berhasil diperbarui!');
+      toast.success('Status pesanan berhasil diperbarui!');
       fetchOrders();
     } catch (error) {
       console.error('Update status error:', error);
-      alert('Gagal memperbarui status pesanan.');
+      toast.error('Gagal memperbarui status pesanan.');
     }
   };
 

@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import type { CommodityCategory } from '@/types';
+import toast from 'react-hot-toast';
 
 export default function CommodityFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -56,7 +57,7 @@ export default function CommodityFormPage() {
       }
     } catch (error) {
       console.error('Error fetching commodity:', error);
-      alert('Gagal memuat data komoditas.');
+      toast.error('Gagal memuat data komoditas.');
       navigate('/farmer/commodities');
     }
   };
@@ -124,17 +125,17 @@ export default function CommodityFormPage() {
           .update(payload)
           .eq('id', id);
         if (error) throw error;
-        alert('Komoditas berhasil diperbarui!');
+        toast.success('Komoditas berhasil diperbarui!');
       } else {
         const { error } = await supabase.from('commodities').insert([payload]);
         if (error) throw error;
-        alert('Komoditas berhasil ditambahkan!');
+        toast.success('Komoditas berhasil ditambahkan!');
       }
 
       navigate('/farmer/commodities');
     } catch (error: any) {
       console.error('Error saving commodity:', error);
-      alert(error.message || 'Gagal menyimpan komoditas.');
+      toast.error(error.message || 'Gagal menyimpan komoditas.');
     } finally {
       setLoading(false);
     }

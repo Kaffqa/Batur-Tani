@@ -26,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Severity, AlertType } from '@/types';
+import toast from 'react-hot-toast';
 
 const alertIcons: Record<AlertType, React.ReactNode> = {
   heavy_rain: <CloudRain className="h-4 w-4" />,
@@ -148,10 +149,10 @@ export default function FarmerDashboard() {
         .eq('id', user.id);
       
       if (error) throw error;
-      alert('Lokasi berhasil diperbarui!');
+      toast.success('Lokasi berhasil diperbarui!');
     } catch (error) {
       console.error('Error updating location:', error);
-      alert('Gagal menyimpan lokasi ke profil.');
+      toast.error('Gagal menyimpan lokasi ke profil.');
     }
   };
 

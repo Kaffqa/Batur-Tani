@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import type { Commodity } from '@/types';
+import toast from 'react-hot-toast';
 
 export default function CommoditiesPage() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function CommoditiesPage() {
       setCommodities(data || []);
     } catch (error) {
       console.error('Error fetching commodities:', error);
-      alert('Gagal memuat daftar komoditas.');
+      toast.error('Gagal memuat daftar komoditas.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export default function CommoditiesPage() {
       setCommodities(commodities.filter((c) => c.id !== id));
     } catch (error) {
       console.error('Error deleting commodity:', error);
-      alert('Gagal menghapus komoditas.');
+      toast.error('Gagal menghapus komoditas.');
     }
   };
 

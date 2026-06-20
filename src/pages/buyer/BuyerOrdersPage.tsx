@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils';
 import EqcFormModal from '@/components/dashboard/EqcFormModal';
 import type { Order } from '@/types';
+import toast from 'react-hot-toast';
 
 export default function BuyerOrdersPage() {
   const { user } = useAuth();
@@ -52,7 +53,7 @@ export default function BuyerOrdersPage() {
           .single();
           
         if (error || !data) {
-          alert('Token pembayaran tidak ditemukan. Silakan buat pesanan baru.');
+          toast('Token pembayaran tidak ditemukan. Silakan buat pesanan baru.');
           return;
         }
         
@@ -68,17 +69,17 @@ export default function BuyerOrdersPage() {
               status: 'on_hold'
             }).eq('id', order.id);
 
-            alert('Pembayaran berhasil!');
+            toast.success('Pembayaran berhasil!');
             fetchOrders();
           },
           onPending: function (_result: any) {
-            alert('Menunggu pembayaran Anda...');
+            toast('Menunggu pembayaran Anda...');
           },
           onError: function (_result: any) {
-            alert('Pembayaran gagal.');
+            toast.error('Pembayaran gagal.');
           },
           onClose: function () {
-            alert('Anda menutup popup tanpa menyelesaikan pembayaran.');
+            toast('Anda menutup popup tanpa menyelesaikan pembayaran.');
           }
         });
       } catch (err) {
@@ -87,7 +88,7 @@ export default function BuyerOrdersPage() {
     } else if (order.status === 'in_delivery') {
       setEqcOrder(order);
     } else {
-      alert(`Status pesanan ini: ${order.status}`);
+      toast(`Status pesanan ini: ${order.status}`);
     }
   };
 

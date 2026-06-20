@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 import type { Commodity } from '@/types';
+import toast from 'react-hot-toast';
 
 export default function CommodityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -44,7 +45,7 @@ export default function CommodityDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching commodity detail:', error);
-      alert('Gagal memuat detail komoditas.');
+      toast.error('Gagal memuat detail komoditas.');
       navigate('/buyer/marketplace');
     } finally {
       setLoading(false);

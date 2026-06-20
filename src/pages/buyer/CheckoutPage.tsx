@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
 import type { Commodity } from '@/types';
+import toast from 'react-hot-toast';
 
 // Declare Midtrans Snap globally
 declare global {
@@ -56,7 +57,7 @@ export default function CheckoutPage() {
       setCommodity(data as any);
     } catch (error) {
       console.error('Error fetching commodity:', error);
-      alert('Gagal memuat data komoditas.');
+      toast.error('Gagal memuat data komoditas.');
       navigate('/buyer/marketplace');
     } finally {
       setLoading(false);
@@ -67,7 +68,7 @@ export default function CheckoutPage() {
     if (!commodity || !user) return;
     
     if (quantity > commodity.stock_projection) {
-      alert('Kuantitas melebihi stok yang tersedia.');
+      toast.error('Kuantitas melebihi stok yang tersedia.');
       return;
     }
 
@@ -150,19 +151,19 @@ export default function CheckoutPage() {
             status: 'on_hold'
           }).eq('id', orderId);
 
-          alert('Pembayaran berhasil! Dana ditahan di sistem Escrow.');
+          toast.success('Pembayaran berhasil! Dana ditahan di sistem Escrow.');
           navigate('/buyer/orders');
         },
         onPending: function (result: any) {
-          alert('Menunggu pembayaran Anda...');
+          toast('Menunggu pembayaran Anda...');
           navigate('/buyer/orders');
         },
         onError: function (result: any) {
-          alert('Pembayaran gagal.');
+          toast.error('Pembayaran gagal.');
           setProcessing(false);
         },
         onClose: function () {
-          alert('Anda menutup popup tanpa menyelesaikan pembayaran.');
+          toast('Anda menutup popup tanpa menyelesaikan pembayaran.');
           setProcessing(false);
           navigate('/buyer/orders');
         }
@@ -170,7 +171,7 @@ export default function CheckoutPage() {
 
     } catch (error: any) {
       console.error('Payment Error:', error);
-      alert(error.message || 'Terjadi kesalahan saat memproses pesanan.');
+      toast.error(error.message || 'Terjadi kesalahan saat memproses pesanan.');
       setProcessing(false);
     }
   };

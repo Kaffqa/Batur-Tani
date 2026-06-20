@@ -3,6 +3,7 @@ import { X, CheckCircle, Camera, AlertCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface EqcFormModalProps {
   orderId: string;
@@ -31,7 +32,7 @@ export default function EqcFormModal({
     e.preventDefault();
     
     if (!isApproved && condition !== 'rejected') {
-      alert('Mohon centang persetujuan pelepasan dana jika kondisi barang dapat diterima.');
+      toast.error('Mohon centang persetujuan pelepasan dana jika kondisi barang dapat diterima.');
       return;
     }
 
@@ -51,11 +52,11 @@ export default function EqcFormModal({
 
       if (error) throw error;
       
-      alert(isApproved ? 'E-QC berhasil! Dana diteruskan ke petani.' : 'E-QC disubmit. Pengajuan retur akan diproses.');
+      toast(isApproved ? 'E-QC berhasil! Dana diteruskan ke petani.' : 'E-QC disubmit. Pengajuan retur akan diproses.');
       onSuccess();
     } catch (err) {
       console.error('EQC Error:', err);
-      alert('Gagal mengirim form E-QC.');
+      toast.error('Gagal mengirim form E-QC.');
     } finally {
       setLoading(false);
     }
