@@ -5,7 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 
-export default function Navbar() {
+interface NavbarProps {
+  isDashboard?: boolean;
+}
+
+export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,16 +33,17 @@ export default function Navbar() {
   return (
     <header
       className={`
-        fixed top-0 left-0 right-0 z-40
+        fixed top-0 right-0 z-40
         bg-slate-900/70 backdrop-blur-xl border-b
         transition-all duration-300
+        ${isDashboard ? 'left-0 lg:left-64' : 'left-0'}
         ${scrolled ? 'border-slate-700/60 shadow-lg shadow-black/20' : 'border-transparent'}
       `.trim()}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={isDashboard ? "w-full px-4 sm:px-6 lg:px-8" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
         <div className="flex items-center justify-between h-16">
           {/* ── Logo ── */}
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" className={`flex items-center gap-2.5 group ${isDashboard ? 'lg:hidden' : ''}`}>
             <span className="text-2xl" aria-hidden="true">
               🌾
             </span>

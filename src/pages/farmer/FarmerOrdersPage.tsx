@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Truck, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Truck, AlertCircle, RefreshCcw, Camera, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Button from '@/components/ui/Button';
@@ -26,7 +26,8 @@ export default function FarmerOrdersPage() {
         .select(`
           *,
           commodity:commodities!orders_commodity_id_fkey (name, unit),
-          buyer:profiles!orders_buyer_id_fkey (business_name, full_name, phone, address)
+          buyer:profiles!orders_buyer_id_fkey (business_name, full_name, phone, address),
+          eqc_logs (*)
         `)
         .eq('farmer_id', user!.id)
         .neq('status', 'pending_payment') // Farmer shouldn't process unpaid orders
@@ -37,6 +38,34 @@ export default function FarmerOrdersPage() {
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptReturn = async (orderId: string) => {
+    try {
+      setLoading(true);
+      // 1. Update order status to cancelled
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+        
+      if (orderError) throw orderError;
+
+      // 2. Update escrow to refunded
+      const { error: escrowError } = await supabase
+        .from('escrow_transactions')
+        .update({ status: 'refunded' })
+        .eq('order_id', orderId);
+        
+      if (escrowError) throw escrowError;
+
+      toast.success('Retur diterima. Dana telah dikembalikan ke pembeli.');
+      fetchOrders();
+    } catch (error) {
+      console.error('Refund error:', error);
+      toast.error('Gagal memproses pengembalian dana.');
       setLoading(false);
     }
   };
@@ -80,7 +109,10 @@ export default function FarmerOrdersPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
+              {orders.map((order) => {
+                const rejectedEqc = order.eqc_logs?.find((log: any) => log.condition === 'rejected' && !log.is_approved);
+                
+                return (
                 <div
                   key={order.id}
                   className="flex flex-col lg:flex-row lg:items-start justify-between p-5 rounded-xl bg-slate-800/50 border border-slate-700/50 gap-6"
@@ -112,6 +144,36 @@ export default function FarmerOrdersPage() {
                       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex gap-3 text-sm">
                         <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
                         <p className="text-amber-200/80">Catatan: {order.notes}</p>
+                      </div>
+                    )}
+
+                    {rejectedEqc && order.status !== 'cancelled' && (
+                      <div className="mt-4 p-4 rounded-xl bg-red-900/20 border border-red-500/30 space-y-3">
+                        <div className="flex items-center gap-2 text-red-400 font-medium">
+                          <AlertTriangle className="w-5 h-5 shrink-0" />
+                          <h4>E-QC Ditolak Pembeli</h4>
+                        </div>
+                        <div className="text-sm text-red-200/80 space-y-1">
+                          <p><span className="text-red-300">Catatan Pembeli:</span> {rejectedEqc.notes || '-'}</p>
+                          {rejectedEqc.temperature && (
+                            <p><span className="text-red-300">Suhu Kedatangan:</span> {rejectedEqc.temperature}°C</p>
+                          )}
+                        </div>
+                        {rejectedEqc.photo_url && (
+                          <div className="flex items-center gap-2 text-xs text-red-300/80">
+                            <Camera className="w-4 h-4 shrink-0" />
+                            <span>Terdapat lampiran foto bukti kerusakan</span>
+                          </div>
+                        )}
+                        <div className="pt-2">
+                          <button 
+                            onClick={() => handleAcceptReturn(order.id)}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50 rounded-xl transition-colors text-sm font-medium w-full sm:w-auto"
+                          >
+                            <RefreshCcw className="w-4 h-4 shrink-0" />
+                            Terima Retur & Refund Dana
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -146,7 +208,8 @@ export default function FarmerOrdersPage() {
                     ) : null}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

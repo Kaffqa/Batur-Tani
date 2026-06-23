@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -55,13 +55,22 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       {/* ── Sidebar ── */}
       <aside
         className={`
-          fixed top-16 left-0 bottom-0 z-30 w-64
+          fixed top-0 left-0 bottom-0 z-50 w-64
           bg-slate-900/80 backdrop-blur-xl border-r border-slate-700/50
           transition-transform duration-300 ease-out
           lg:translate-x-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `.trim()}
       >
+        {/* Sidebar Header / Logo */}
+        <div className="hidden lg:flex items-center h-16 px-6 border-b border-slate-700/50">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <span className="text-2xl" aria-hidden="true">🌾</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              Batur Tani
+            </span>
+          </Link>
+        </div>
         {/* Mobile close button */}
         <div className="flex items-center justify-end p-3 lg:hidden">
           <button

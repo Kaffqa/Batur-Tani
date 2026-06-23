@@ -12,7 +12,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Top navbar */}
-      <Navbar />
+      <Navbar isDashboard={true} />
 
       {/* Sidebar */}
       <Sidebar
