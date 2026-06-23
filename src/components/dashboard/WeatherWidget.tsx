@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Thermometer, Droplets, CloudRain, Wind, Sprout, Cloud, MapPin, Check, X, Sun } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, Wind, Sprout, Cloud, MapPin, X, Sun } from 'lucide-react';
 import { fetchCurrentWeather } from '@/lib/weather';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { supabase } from '@/lib/supabase';
@@ -94,17 +94,29 @@ export default function WeatherWidget({
   const [dataSource, setDataSource] = useState<'satellite'|'iot'>('satellite');
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editLat, setEditLat] = useState(latitude.toString());
-  const [editLon, setEditLon] = useState(longitude.toString());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSaveLocation = () => {
-    const newLat = parseFloat(editLat);
-    const newLon = parseFloat(editLon);
-    if (!isNaN(newLat) && !isNaN(newLon) && onUpdateLocation) {
-      onUpdateLocation(newLat, newLon);
+  useEffect(() => {
+    if (!isEditing || searchQuery.length < 3) {
+      setSuggestions([]);
+      return;
     }
-    setIsEditing(false);
-  };
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchQuery)}&count=5&language=id&format=json`);
+        const data = await res.json();
+        setSuggestions(data.results || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, isEditing]);
 
   useEffect(() => {
     let cancelled = false;
@@ -239,29 +251,45 @@ export default function WeatherWidget({
             </span>
           )}
           {isEditing ? (
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="number"
-                step="0.0001"
-                value={editLat}
-                onChange={(e) => setEditLat(e.target.value)}
-                className="w-24 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-emerald-500 outline-none"
-                placeholder="Latitude"
-              />
-              <input
-                type="number"
-                step="0.0001"
-                value={editLon}
-                onChange={(e) => setEditLon(e.target.value)}
-                className="w-24 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-emerald-500 outline-none"
-                placeholder="Longitude"
-              />
-              <button onClick={handleSaveLocation} className="p-1 bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30">
-                <Check className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => setIsEditing(false)} className="p-1 bg-slate-700/50 text-slate-400 rounded hover:bg-slate-700">
-                <X className="w-3.5 h-3.5" />
-              </button>
+            <div className="mt-2 space-y-2 relative">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full sm:w-64 px-3 py-1.5 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-emerald-500 outline-none"
+                  placeholder="Ketik nama kota/kecamatan..."
+                  autoFocus
+                />
+                <button onClick={() => setIsEditing(false)} className="p-1.5 bg-slate-700/50 text-slate-400 rounded hover:bg-slate-700 shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {searchQuery.length >= 3 && (
+                <div className="absolute z-10 w-full sm:w-64 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
+                  {isSearching ? (
+                    <div className="px-3 py-2 text-xs text-slate-400">Mencari...</div>
+                  ) : suggestions.length > 0 ? (
+                    suggestions.map((s, idx) => (
+                      <button
+                        key={idx}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700/50 flex flex-col"
+                        onClick={() => {
+                          if (onUpdateLocation) {
+                            onUpdateLocation(s.latitude, s.longitude);
+                          }
+                          setIsEditing(false);
+                        }}
+                      >
+                        <span className="font-medium">{s.name}</span>
+                        <span className="text-[10px] text-slate-400">{s.admin1 ? `${s.admin1}, ` : ''}{s.country}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-slate-400">Tidak ditemukan</div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -278,8 +306,8 @@ export default function WeatherWidget({
         {!isEditing && onUpdateLocation && (
           <button 
             onClick={() => {
-              setEditLat(latitude.toString());
-              setEditLon(longitude.toString());
+              setSearchQuery('');
+              setSuggestions([]);
               setIsEditing(true);
             }}
             className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors underline"

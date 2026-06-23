@@ -13,6 +13,7 @@ import FarmerDashboard from '@/pages/farmer/FarmerDashboard';
 import CommoditiesPage from '@/pages/farmer/CommoditiesPage';
 import CommodityFormPage from '@/pages/farmer/CommodityFormPage';
 import FarmerOrdersPage from '@/pages/farmer/FarmerOrdersPage';
+import FarmerWeatherPage from '@/pages/farmer/FarmerWeatherPage';
 import BuyerDashboard from '@/pages/buyer/BuyerDashboard';
 import MarketplacePage from '@/pages/buyer/MarketplacePage';
 import CommodityDetailPage from '@/pages/buyer/CommodityDetailPage';
@@ -137,6 +138,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['farmer']}>
             <FarmerOrdersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/farmer/weather"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <FarmerWeatherPage />
           </ProtectedRoute>
         }
       />

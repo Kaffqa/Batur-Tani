@@ -24,7 +24,7 @@ import OrderStatusBadge from '@/components/dashboard/OrderStatusBadge';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import type { Severity, AlertType } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -127,7 +127,7 @@ export default function FarmerDashboard() {
         .select('*')
         .eq('farmer_id', user!.id)
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(15);
       
       setAlerts(alertsData || []);
 
@@ -135,6 +135,24 @@ export default function FarmerDashboard() {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, is_read: true } : a)));
+      await supabase.from('weather_alerts').update({ is_read: true }).eq('id', id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      setAlerts((prev) => prev.map((a) => ({ ...a, is_read: true })));
+      await supabase.from('weather_alerts').update({ is_read: true }).eq('farmer_id', user!.id).eq('is_read', false);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -167,7 +185,6 @@ export default function FarmerDashboard() {
           <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
             {farmerName}
           </span>{' '}
-          👋
         </h1>
         <p className="text-sm text-slate-400 mt-1">{today}</p>
       </div>
@@ -218,12 +235,22 @@ export default function FarmerDashboard() {
               <AlertTriangle className="h-4 w-4 text-amber-400" />
               Peringatan Cuaca
             </h3>
-            <span className="text-xs text-slate-500">
-              {alerts.filter((a) => !a.is_read).length} belum dibaca
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">
+                {alerts.filter((a) => !a.is_read).length} belum dibaca
+              </span>
+              {alerts.filter((a) => !a.is_read).length > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="text-[10px] text-cyan-400 hover:underline"
+                >
+                  Tandai Semua
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/5 overflow-y-auto custom-scrollbar max-h-[250px]">
             {alerts.length === 0 ? (
               <div className="px-6 py-8 text-center text-slate-500 text-sm">
                 Tidak ada peringatan cuaca saat ini.
@@ -232,32 +259,62 @@ export default function FarmerDashboard() {
               alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`px-6 py-4 flex items-start gap-3 transition-colors hover:bg-white/[0.02] ${
+                  className={`px-6 py-4 flex flex-col gap-3 transition-colors hover:bg-white/[0.02] ${
                     !alert.is_read ? 'bg-white/[0.01]' : ''
                   }`}
                 >
-                  <div
-                    className={`shrink-0 mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center border ${severityColors[alert.severity as Severity] || severityColors.low}`}
-                  >
-                    {alertIcons[alert.alert_type as AlertType] || <AlertTriangle className="h-4 w-4" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        !alert.is_read
-                          ? 'text-slate-200 font-medium'
-                          : 'text-slate-400'
-                      }`}
+                  <div className="flex items-start gap-3 w-full">
+                    <div
+                      className={`shrink-0 mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center border ${severityColors[alert.severity as Severity] || severityColors.low}`}
                     >
-                      {alert.message}
-                    </p>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {formatDate(alert.created_at)}
-                    </p>
+                      {alertIcons[alert.alert_type as AlertType] || <AlertTriangle className="h-4 w-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          !alert.is_read
+                            ? 'text-slate-200 font-medium'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {alert.message}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {new Date(alert.created_at).toLocaleString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }).replace(/\./g, ':')}
+                      </p>
+                    </div>
+                    {!alert.is_read && (
+                      <button 
+                        onClick={() => handleMarkAsRead(alert.id)}
+                        className="shrink-0 h-2.5 w-2.5 rounded-full bg-emerald-400 mt-2 hover:scale-125 hover:bg-emerald-300 transition-all cursor-pointer shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                        title="Tandai sudah dibaca"
+                      />
+                    )}
                   </div>
-                  {!alert.is_read && (
-                    <div className="shrink-0 h-2 w-2 rounded-full bg-emerald-400 mt-2" />
-                  )}
+                  
+                  {/* Action buttons */}
+                  <div className="pl-11 flex items-center gap-2">
+                    <Link 
+                      to="/farmer/weather" 
+                      className="px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
+                    >
+                      Lihat Detail Cuaca
+                    </Link>
+                    {!alert.is_read && (
+                      <button 
+                        onClick={() => handleMarkAsRead(alert.id)}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs font-medium text-emerald-400 transition-colors"
+                      >
+                        Tandai Selesai
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             )}
