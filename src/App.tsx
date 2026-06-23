@@ -7,8 +7,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import LandingPage from '@/pages/LandingPage';
-import LoginPage from '@/pages/auth/LoginPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
+import { AuthModalProvider, useAuthModal } from '@/contexts/AuthModalContext';
+import AuthModal from '@/components/auth/AuthModal';
 import FarmerDashboard from '@/pages/farmer/FarmerDashboard';
 import CommoditiesPage from '@/pages/farmer/CommoditiesPage';
 import CommodityFormPage from '@/pages/farmer/CommodityFormPage';
@@ -42,7 +42,7 @@ function ProtectedRoute({
   const { user, profile, loading } = useAuth();
 
   if (loading) return <LoadingSpinner fullPage text="Memuat..." />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
     return (
       <Navigate
@@ -74,6 +74,23 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 // ------------------------------------------------------------
+// Old Auth Routes Handler
+// ------------------------------------------------------------
+
+function AuthRouteRedirect({ view }: { view: 'login' | 'register' }) {
+  const { openAuthModal } = useAuthModal();
+  
+  // We use setTimeout to ensure it opens after navigation completes
+  import('react').then(({ useEffect }) => {
+    useEffect(() => {
+      openAuthModal(view);
+    }, [view]);
+  });
+
+  return <Navigate to="/" replace />;
+}
+
+// ------------------------------------------------------------
 // App Routes
 // ------------------------------------------------------------
 
@@ -86,7 +103,7 @@ function AppRoutes() {
         path="/login"
         element={
           <PublicRoute>
-            <LoginPage />
+            <AuthRouteRedirect view="login" />
           </PublicRoute>
         }
       />
@@ -94,7 +111,7 @@ function AppRoutes() {
         path="/register"
         element={
           <PublicRoute>
-            <RegisterPage />
+            <AuthRouteRedirect view="register" />
           </PublicRoute>
         }
       />
@@ -224,17 +241,20 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <Toaster 
-          position="top-right" 
-          toastOptions={{
-            style: {
-              background: '#1e293b',
-              color: '#f8fafc',
-              border: '1px solid #334155',
-            },
-          }} 
-        />
-        <AppRoutes />
+        <AuthModalProvider>
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              style: {
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid #334155',
+              },
+            }} 
+          />
+          <AuthModal />
+          <AppRoutes />
+        </AuthModalProvider>
       </AuthProvider>
     </Router>
   );

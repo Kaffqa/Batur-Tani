@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthModal } from '@/contexts/AuthModalContext';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 
@@ -11,6 +12,7 @@ interface NavbarProps {
 
 export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
   const { user, profile, signOut } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -24,7 +26,7 @@ export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/login');
+    // openAuthModal is handled in UI directly
   };
 
   const roleBadgeVariant = profile?.role === 'farmer' ? 'success' : 'info';
@@ -85,14 +87,14 @@ export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/login')}
+                  onClick={() => openAuthModal('login')}
                 >
                   Masuk
                 </Button>
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => navigate('/register')}
+                  onClick={() => openAuthModal('register')}
                 >
                   Daftar
                 </Button>
@@ -150,7 +152,7 @@ export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  navigate('/login');
+                  openAuthModal('login');
                   setMobileOpen(false);
                 }}
                 className="w-full"
@@ -161,7 +163,7 @@ export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  navigate('/register');
+                  openAuthModal('register');
                   setMobileOpen(false);
                 }}
                 className="w-full"
