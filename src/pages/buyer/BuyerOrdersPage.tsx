@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, ArrowRight } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import OrderStatusBadge from '@/components/dashboard/OrderStatusBadge';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -92,7 +92,7 @@ export default function BuyerOrdersPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Memuat Pesanan..." />;
+  if (loading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

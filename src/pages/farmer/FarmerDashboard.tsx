@@ -21,7 +21,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatsCard from '@/components/dashboard/StatsCard';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import OrderStatusBadge from '@/components/dashboard/OrderStatusBadge';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
@@ -174,7 +174,7 @@ export default function FarmerDashboard() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Memuat Dashboard..." />;
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <DashboardLayout>

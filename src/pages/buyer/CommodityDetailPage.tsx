@@ -4,7 +4,7 @@ import { ArrowLeft, ShoppingCart, User, Calendar, MapPin, Package } from 'lucide
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import DetailSkeleton from '@/components/skeletons/DetailSkeleton';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 import type { Commodity } from '@/types';
@@ -57,7 +57,7 @@ export default function CommodityDetailPage() {
   };
 
   if (loading) {
-    return <LoadingSpinner fullPage text="Memuat Detail..." />;
+    return <DetailSkeleton />;
   }
 
   if (!commodity) {

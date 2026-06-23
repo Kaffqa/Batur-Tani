@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { History, Search } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import OrderStatusBadge from '@/components/dashboard/OrderStatusBadge';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,7 +39,7 @@ export default function BuyerHistoryPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Memuat Riwayat..." />;
+  if (loading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

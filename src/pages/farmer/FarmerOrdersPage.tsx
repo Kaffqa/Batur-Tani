@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Truck, AlertCircle, RefreshCcw, Camera, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import Button from '@/components/ui/Button';
 import OrderStatusBadge from '@/components/dashboard/OrderStatusBadge';
 import { supabase } from '@/lib/supabase';
@@ -86,7 +86,7 @@ export default function FarmerOrdersPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Memuat Pesanan..." />;
+  if (loading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

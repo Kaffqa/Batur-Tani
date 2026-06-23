@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Cloud, ThermometerSnowflake, Droplets, Wind, Activity, AlertTriangle, Info, CloudRain, Sun } from 'lucide-react';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import WeatherSkeleton from '@/components/skeletons/WeatherSkeleton';
 import { fetchCurrentWeather, fetchWeatherForecast, analyzeWeatherRisk } from '@/lib/weather';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -61,7 +61,7 @@ export default function FarmerWeatherPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Menganalisis data cuaca dan IoT..." />;
+  if (loading) return <WeatherSkeleton />;
 
   const isFrostRisk = risk?.alertType === 'frost';
 

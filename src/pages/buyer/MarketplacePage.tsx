@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import CommodityCard from '@/components/dashboard/CommodityCard';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import CardGridSkeleton from '@/components/skeletons/CardGridSkeleton';
 import { supabase } from '@/lib/supabase';
 import type { Commodity, CommodityCategory } from '@/types';
 
@@ -105,7 +105,7 @@ export default function MarketplacePage() {
   };
 
   if (loading) {
-    return <LoadingSpinner fullPage text="Memuat Marketplace..." />;
+    return <CardGridSkeleton />;
   }
 
   return (

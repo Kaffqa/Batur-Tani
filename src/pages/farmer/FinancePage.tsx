@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Wallet, ArrowDownToLine, ArrowUpRight, Lock, CheckCircle2 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import Badge from '@/components/ui/Badge';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,7 +83,7 @@ export default function FinancePage() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Memuat Data Keuangan..." />;
+  if (loading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, CreditCard, ShieldCheck, MapPin, AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Button from '@/components/ui/Button';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import CheckoutSkeleton from '@/components/skeletons/CheckoutSkeleton';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/utils';
@@ -176,7 +176,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage text="Menyiapkan Checkout..." />;
+  if (loading) return <CheckoutSkeleton />;
   if (!commodity) return null;
 
   return (
