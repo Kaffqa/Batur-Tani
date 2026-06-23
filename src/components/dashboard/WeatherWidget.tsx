@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Thermometer, Droplets, CloudRain, Wind, Sprout, Cloud, MapPin, Check, X } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, Wind, Sprout, Cloud, MapPin, Check, X, Sun } from 'lucide-react';
 import { fetchCurrentWeather } from '@/lib/weather';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { supabase } from '@/lib/supabase';
 
 interface WeatherWidgetProps {
   latitude: number;
   longitude: number;
+  farmerId?: string;
   onUpdateLocation?: (lat: number, lon: number) => void;
 }
 
@@ -15,6 +17,7 @@ interface WeatherData {
   rainfall: number;
   windSpeed: number;
   soilMoisture: number;
+  lightIntensity?: number; // Optional IoT only field
 }
 
 interface MetricCardProps {
@@ -81,12 +84,14 @@ function getSoilMoistureSeverity(s: number): 'good' | 'moderate' | 'bad' {
 export default function WeatherWidget({
   latitude,
   longitude,
+  farmerId,
   onUpdateLocation,
 }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState<string>('Memuat lokasi...');
+  const [dataSource, setDataSource] = useState<'satellite'|'iot'>('satellite');
 
   const [isEditing, setIsEditing] = useState(false);
   const [editLat, setEditLat] = useState(latitude.toString());
@@ -108,8 +113,42 @@ export default function WeatherWidget({
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchCurrentWeather(latitude, longitude);
-        if (!cancelled) setWeather(data);
+
+        let usedIot = false;
+
+        if (farmerId) {
+          // Check for recent IoT telemetry data (within last 1 hour)
+          const oneHourAgo = new Date(Date.now() - 60 * 1000).toISOString();
+          const { data: telemetry } = await supabase
+            .from('sensor_telemetry')
+            .select('*')
+            .eq('farmer_id', farmerId)
+            .gte('created_at', oneHourAgo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (telemetry && !cancelled) {
+            setWeather({
+              temperature: telemetry.temperature,
+              humidity: telemetry.humidity,
+              rainfall: telemetry.is_raining ? 15 : 0, // Mock rainfall value based on boolean
+              windSpeed: 0, // Our prototype doesn't have anemometer
+              soilMoisture: telemetry.soil_moisture,
+              lightIntensity: telemetry.light_intensity,
+            });
+            setDataSource('iot');
+            usedIot = true;
+          }
+        }
+
+        if (!usedIot && !cancelled) {
+          const data = await fetchCurrentWeather(latitude, longitude);
+          if (!cancelled) {
+            setWeather(data);
+            setDataSource('satellite');
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -186,6 +225,19 @@ export default function WeatherWidget({
             <Cloud className="h-4 w-4 text-cyan-400" />
             Kondisi Cuaca Saat Ini
           </h3>
+          {dataSource === 'iot' ? (
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-2 rounded bg-cyan-500/10 text-[10px] font-medium text-cyan-400 border border-cyan-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+              Sumber: Sensor IoT Lokal (Real-time)
+            </span>
+          ) : (
+            <span className="inline-block mt-2 px-2 py-0.5 rounded bg-slate-700/50 text-[10px] font-medium text-slate-400 border border-slate-600">
+              Sumber: Satelit Open-Meteo
+            </span>
+          )}
           {isEditing ? (
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -255,18 +307,29 @@ export default function WeatherWidget({
         />
         <MetricCard
           icon={<CloudRain className="h-5 w-5" />}
-          label="Curah Hujan"
-          value={weather.rainfall.toFixed(1)}
-          unit="mm"
-          severity={getRainfallSeverity(weather.rainfall)}
+          label={dataSource === 'iot' ? 'Status Hujan' : 'Curah Hujan'}
+          value={dataSource === 'iot' ? (weather.rainfall > 0 ? 'Ya' : 'Tidak') : weather.rainfall.toFixed(1)}
+          unit={dataSource === 'iot' ? '' : 'mm'}
+          severity={dataSource === 'iot' ? (weather.rainfall > 0 ? 'bad' : 'good') : getRainfallSeverity(weather.rainfall)}
         />
-        <MetricCard
-          icon={<Wind className="h-5 w-5" />}
-          label="Kecepatan Angin"
-          value={weather.windSpeed.toFixed(1)}
-          unit="km/h"
-          severity={getWindSeverity(weather.windSpeed)}
-        />
+        {dataSource !== 'iot' && (
+          <MetricCard
+            icon={<Wind className="h-5 w-5" />}
+            label="Kecepatan Angin"
+            value={weather.windSpeed.toFixed(1)}
+            unit="km/h"
+            severity={getWindSeverity(weather.windSpeed)}
+          />
+        )}
+        {dataSource === 'iot' && weather.lightIntensity !== undefined && (
+          <MetricCard
+            icon={<Sun className="h-5 w-5" />}
+            label="Intensitas Cahaya"
+            value={weather.lightIntensity.toFixed(0)}
+            unit="%"
+            severity={weather.lightIntensity > 20 ? 'good' : 'moderate'}
+          />
+        )}
         <MetricCard
           icon={<Sprout className="h-5 w-5" />}
           label="Kelembapan Tanah"

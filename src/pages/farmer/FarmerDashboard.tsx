@@ -203,6 +203,7 @@ export default function FarmerDashboard() {
           <WeatherWidget 
             latitude={lat} 
             longitude={lon} 
+            farmerId={user?.id}
             onUpdateLocation={handleUpdateLocation}
           />
         </div>
