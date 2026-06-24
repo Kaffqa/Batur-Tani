@@ -175,6 +175,8 @@ export interface WeatherData {
   windSpeed: number;
   soilMoisture: number;
   evapotranspiration: number;
+  solarRadiation?: number;
+  lightIntensity?: number;
   description: string;
 }
 

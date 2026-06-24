@@ -1,5 +1,6 @@
 import React, { useState, type FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 import { 
   X, Mail, KeyRound, LogIn, AlertCircle, 
   User, Phone, Building2, CheckCircle2, UserPlus, ArrowRight, ArrowLeft 
@@ -50,7 +51,7 @@ function RoleCard({ icon, title, description, selected, onClick }: RoleCardProps
 
 export default function AuthModal() {
   const { isOpen, view, closeAuthModal, switchView } = useAuthModal();
-  const { signIn, signUp, profile } = useAuth();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   // Reset state when modal opens/closes
@@ -103,13 +104,20 @@ export default function AuthModal() {
     try {
       setLoading(true);
       await signIn(loginEmail, loginPassword);
-      closeAuthModal();
-      setTimeout(() => {
-        // useAuth uses onAuthStateChange which might update profile a bit later. 
-        // We handle redirection generally in App.tsx or we just navigate to dashboard
-        // If we want instant redirect, we can rely on ProtectedRoutes.
-        // For now, we will navigate to dashboard directly if we know role, else App.tsx will handle it
-      }, 300);
+      
+      // Fetch profile to determine redirect path
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        closeAuthModal();
+        if (profile?.role === 'buyer') {
+          navigate('/buyer');
+        } else {
+          navigate('/farmer');
+        }
+      } else {
+        closeAuthModal();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login gagal.');
     } finally {
@@ -136,6 +144,7 @@ export default function AuthModal() {
       setLoading(true);
       await signUp(regEmail, regPassword, regRole!, regName, regBusiness);
       closeAuthModal();
+      navigate(regRole === 'farmer' ? '/farmer' : '/buyer');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registrasi gagal.');
     } finally {

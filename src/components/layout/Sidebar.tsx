@@ -32,6 +32,7 @@ const farmerMenu: MenuItem[] = [
 ];
 
 const buyerMenu: MenuItem[] = [
+  { label: 'Dashboard', path: '/buyer', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Marketplace', path: '/buyer/marketplace', icon: <Store className="h-5 w-5" /> },
   { label: 'Pesanan Saya', path: '/buyer/orders', icon: <ClipboardCheck className="h-5 w-5" /> },
   { label: 'Riwayat', path: '/buyer/history', icon: <History className="h-5 w-5" /> },

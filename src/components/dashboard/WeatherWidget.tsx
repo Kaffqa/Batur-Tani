@@ -126,12 +126,12 @@ export default function WeatherWidget({
         setLoading(true);
         setError(null);
 
-        let usedIot = false;
+        let telemetry = null;
 
         if (farmerId) {
           // Check for recent IoT telemetry data (within last 1 hour)
           const oneHourAgo = new Date(Date.now() - 60 * 1000).toISOString();
-          const { data: telemetry } = await supabase
+          const { data } = await supabase
             .from('sensor_telemetry')
             .select('*')
             .eq('farmer_id', farmerId)
@@ -139,26 +139,35 @@ export default function WeatherWidget({
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
-
-          if (telemetry && !cancelled) {
-            setWeather({
-              temperature: telemetry.temperature,
-              humidity: telemetry.humidity,
-              rainfall: telemetry.is_raining ? 15 : 0, // Mock rainfall value based on boolean
-              windSpeed: 0, // Our prototype doesn't have anemometer
-              soilMoisture: telemetry.soil_moisture,
-              lightIntensity: telemetry.light_intensity,
-            });
-            setDataSource('iot');
-            usedIot = true;
+            
+          if (data && !cancelled) {
+            telemetry = data;
           }
         }
 
-        if (!usedIot && !cancelled) {
-          const data = await fetchCurrentWeather(latitude, longitude);
+        if (!cancelled) {
+          // ALWAYS fetch satellite data to fill the gaps (e.g., wind speed)
+          const satData = await fetchCurrentWeather(latitude, longitude);
+          
           if (!cancelled) {
-            setWeather(data);
-            setDataSource('satellite');
+            if (telemetry) {
+              // TRUE HYBRID: Override satellite with local IoT where available
+              setWeather({
+                temperature: telemetry.temperature,
+                humidity: telemetry.humidity,
+                rainfall: telemetry.is_raining ? 15 : 0, // Mock rainfall value based on boolean
+                windSpeed: satData.windSpeed, // Taken from Satellite (No IoT anemometer)
+                soilMoisture: telemetry.soil_moisture,
+                lightIntensity: telemetry.light_intensity,
+                solarRadiation: satData.solarRadiation,
+                evapotranspiration: satData.evapotranspiration,
+                description: satData.description,
+              });
+              setDataSource('iot');
+            } else {
+              setWeather(satData);
+              setDataSource('satellite');
+            }
           }
         }
       } catch (err) {
@@ -340,24 +349,20 @@ export default function WeatherWidget({
           unit={dataSource === 'iot' ? '' : 'mm'}
           severity={dataSource === 'iot' ? (weather.rainfall > 0 ? 'bad' : 'good') : getRainfallSeverity(weather.rainfall)}
         />
-        {dataSource !== 'iot' && (
-          <MetricCard
-            icon={<Wind className="h-5 w-5" />}
-            label="Kecepatan Angin"
-            value={weather.windSpeed.toFixed(1)}
-            unit="km/h"
-            severity={getWindSeverity(weather.windSpeed)}
-          />
-        )}
-        {dataSource === 'iot' && weather.lightIntensity !== undefined && (
-          <MetricCard
-            icon={<Sun className="h-5 w-5" />}
-            label="Intensitas Cahaya"
-            value={weather.lightIntensity.toFixed(0)}
-            unit="%"
-            severity={weather.lightIntensity > 20 ? 'good' : 'moderate'}
-          />
-        )}
+        <MetricCard
+          icon={<Wind className="h-5 w-5" />}
+          label="Kecepatan Angin"
+          value={weather.windSpeed.toFixed(1)}
+          unit="km/h"
+          severity={getWindSeverity(weather.windSpeed)}
+        />
+        <MetricCard
+          icon={<Sun className="h-5 w-5" />}
+          label="Radiasi Matahari"
+          value={dataSource === 'iot' && weather.lightIntensity !== undefined ? weather.lightIntensity.toFixed(0) : (weather.solarRadiation?.toFixed(0) || '0')}
+          unit={dataSource === 'iot' ? '%' : 'W/m²'}
+          severity={dataSource === 'iot' ? ((weather.lightIntensity || 0) > 20 ? 'good' : 'moderate') : ((weather.solarRadiation || 0) > 100 ? 'good' : 'moderate')}
+        />
         <MetricCard
           icon={<Sprout className="h-5 w-5" />}
           label="Kelembapan Tanah"

@@ -224,9 +224,9 @@ export default function BuyerDashboard() {
                       <span className="text-xs text-slate-500">
                         {formatRelativeTime(order.created_at)}
                       </span>
-                      <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-emerald-400 transition-colors">
+                      <Link to="/buyer/orders" className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-emerald-400 transition-colors">
                         <ArrowRight className="w-4 h-4" />
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 ))}
@@ -249,16 +249,20 @@ export default function BuyerDashboard() {
                     <ArrowRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 transition-all group">
-                  <Clock className="w-5 h-5" />
-                  <span className="text-sm font-medium">Lacak Pesanan</span>
-                  <ArrowRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 transition-all group">
-                  <TrendingUp className="w-5 h-5" />
-                  <span className="text-sm font-medium">Riwayat Transaksi</span>
-                  <ArrowRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
-                </button>
+                <Link to="/buyer/orders" className="block">
+                  <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 transition-all group">
+                    <Clock className="w-5 h-5" />
+                    <span className="text-sm font-medium">Lacak Pesanan</span>
+                    <ArrowRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </Link>
+                <Link to="/buyer/history" className="block">
+                  <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 transition-all group">
+                    <TrendingUp className="w-5 h-5" />
+                    <span className="text-sm font-medium">Riwayat Transaksi</span>
+                    <ArrowRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </Link>
               </div>
             </div>
 

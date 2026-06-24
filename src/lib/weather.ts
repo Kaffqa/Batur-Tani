@@ -31,6 +31,7 @@ export async function fetchCurrentWeather(
       'rain',
       'wind_speed_10m',
       'soil_moisture_0_to_7cm',
+      'shortwave_radiation',
     ].join(','),
     timezone: 'auto',
   });
@@ -49,6 +50,7 @@ export async function fetchCurrentWeather(
   const rainfall = current.rain ?? 0;
   const windSpeed = current.wind_speed_10m ?? 0;
   const soilMoisture = current.soil_moisture_0_to_7cm ?? 0;
+  const solarRadiation = current.shortwave_radiation ?? 0;
 
   return {
     temperature,
@@ -56,6 +58,7 @@ export async function fetchCurrentWeather(
     rainfall,
     windSpeed,
     soilMoisture,
+    solarRadiation,
     // ET₀ is not available in current data — default to 0, use forecast for daily ET₀
     evapotranspiration: 0,
     description: generateWeatherDescription(temperature, humidity, rainfall),
