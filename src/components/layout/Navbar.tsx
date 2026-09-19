@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
@@ -13,7 +13,7 @@ interface NavbarProps {
 export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
   const { user, profile, signOut } = useAuth();
   const { openAuthModal } = useAuthModal();
-  const navigate = useNavigate();
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 

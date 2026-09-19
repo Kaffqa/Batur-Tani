@@ -6,13 +6,13 @@
 // ==========================================
 // KONFIGURASI WI-FI & SUPABASE (Ubah Ini)
 // ==========================================
-const char* WIFI_SSID = "NAMA_WIFI_ANDA";
-const char* WIFI_PASSWORD = "PASSWORD_WIFI_ANDA";
+const char* WIFI_SSID = "kff";
+const char* WIFI_PASSWORD = "12345678901";
 
 // URL Edge Function Supabase Anda (Sudah otomatis disesuaikan dengan Cloud Anda)
 const char* SUPABASE_URL = "https://gmwfgwwuaebvneqkvxeo.supabase.co/functions/v1/ingest-telemetry";
 // Ganti dengan UUID Farmer dari database Anda
-const char* FARMER_ID = "MASUKKAN_FARMER_ID_ANDA_DISINI";
+const char* FARMER_ID = "0225ce63-46dc-460e-941c-2d5c0074a404";
 
 // ==========================================
 // KONFIGURASI PIN SENSOR (Sesuaikan dengan wiring)

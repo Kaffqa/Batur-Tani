@@ -7,6 +7,7 @@ import WeatherSkeleton from '@/components/skeletons/WeatherSkeleton';
 import { fetchCurrentWeather, fetchWeatherForecast, analyzeWeatherRisk } from '@/lib/weather';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+
 export default function FarmerWeatherPage() {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -14,21 +15,36 @@ export default function FarmerWeatherPage() {
   const [forecast, setForecast] = useState<any[]>([]);
   const [risk, setRisk] = useState<any>(null);
 
+  const [currentWeather, setCurrentWeather] = useState<any>(null);
+
+  const [lat, setLat] = useState<number>(-7.23);
+  const [lon, setLon] = useState<number>(109.9);
+
+  useEffect(() => {
+    if (profile?.latitude && profile?.longitude) {
+      setLat(profile.latitude);
+      setLon(profile.longitude);
+    }
+  }, [profile]);
+
   useEffect(() => {
     if (user && profile) {
       loadData();
     }
   }, [user, profile]);
 
+
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const lat = profile?.latitude || -7.2036;
-      const lon = profile?.longitude || 109.9048;
+      const currentLat = profile?.latitude || -7.2036;
+      const currentLon = profile?.longitude || 109.9048;
 
       // 1. Fetch Forecast & Risk
-      const current = await fetchCurrentWeather(lat, lon);
-      const forecastData = await fetchWeatherForecast(lat, lon, 7);
+      const current = await fetchCurrentWeather(currentLat, currentLon);
+      setCurrentWeather(current);
+      const forecastData = await fetchWeatherForecast(currentLat, currentLon, 7);
       setForecast(forecastData);
       setRisk(analyzeWeatherRisk(current, forecastData));
 
@@ -77,6 +93,66 @@ export default function FarmerWeatherPage() {
             Pantau anomali cuaca, telemetri lahan, dan dapatkan rekomendasi cerdas.
           </p>
         </div>
+
+        {/* Custom Weather Hero */}
+        {currentWeather && (
+          <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 p-8 shadow-2xl">
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 opacity-10">
+              <CloudRain className="h-64 w-64" />
+            </div>
+            
+            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+              {/* Main Temp */}
+              <div className="flex items-center gap-6">
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.2)]">
+                  {currentWeather.rainfall > 0 ? (
+                    <CloudRain className="h-12 w-12" />
+                  ) : currentWeather.temperature > 30 ? (
+                    <Sun className="h-12 w-12 text-amber-400" />
+                  ) : (
+                    <Cloud className="h-12 w-12" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-sm font-medium uppercase tracking-widest text-emerald-400/80 mb-1">
+                    Banyumas Raya
+                  </h2>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-6xl font-black tracking-tighter text-white">
+                      {currentWeather.temperature.toFixed(1)}
+                    </span>
+                    <span className="text-2xl font-bold text-slate-400">°C</span>
+                  </div>
+                  <p className="text-slate-400 mt-1 flex items-center gap-2">
+                    <span>Hujan: {currentWeather.rainfall} mm</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                    <span>Angin: {currentWeather.windSpeed} km/h</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Highlight Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full lg:w-auto">
+                <div className="flex flex-col p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                  <span className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Droplets className="h-3 w-3"/> Kelembapan</span>
+                  <span className="text-xl font-bold text-blue-400">{currentWeather.humidity}<span className="text-sm text-slate-500 font-normal">%</span></span>
+                </div>
+                <div className="flex flex-col p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                  <span className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Sun className="h-3 w-3"/> Radiasi</span>
+                  <span className="text-xl font-bold text-amber-400">{currentWeather.solarRadiation}<span className="text-sm text-slate-500 font-normal"> W/m²</span></span>
+                </div>
+                <div className="flex flex-col p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                  <span className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Wind className="h-3 w-3"/> Angin</span>
+                  <span className="text-xl font-bold text-slate-200">{currentWeather.windSpeed}<span className="text-sm text-slate-500 font-normal"> km/h</span></span>
+                </div>
+                <div className="flex flex-col p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                  <span className="text-xs text-slate-400 mb-1 flex items-center gap-1"><ThermometerSnowflake className="h-3 w-3"/> Tanah</span>
+                  <span className="text-xl font-bold text-emerald-400">{currentWeather.soilMoisture}<span className="text-sm text-slate-500 font-normal">%</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Frost Predictor Card */}

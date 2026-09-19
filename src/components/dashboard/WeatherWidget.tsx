@@ -18,6 +18,9 @@ interface WeatherData {
   windSpeed: number;
   soilMoisture: number;
   lightIntensity?: number; // Optional IoT only field
+  solarRadiation?: number;
+  evapotranspiration?: number;
+  description?: string;
 }
 
 interface MetricCardProps {

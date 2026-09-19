@@ -123,16 +123,13 @@ export default function CheckoutPage() {
       const snapData = await response.json();
       const token = snapData.token;
 
-      // 3. Save Escrow record
-      const { error: escrowError } = await supabase
-        .from('escrow_transactions')
-        .insert([{
-          order_id: orderId,
-          midtrans_order_id: payload.transaction_details.order_id,
-          snap_token: token,
-          amount: totalAmount,
-          status: 'pending'
-        }]);
+      // 3. Save Escrow record securely via RPC
+      const { error: escrowError } = await supabase.rpc('create_escrow_sandbox', {
+        p_order_id: orderId,
+        p_midtrans_order_id: payload.transaction_details.order_id,
+        p_snap_token: token,
+        p_amount: totalAmount
+      });
 
       if (escrowError) throw escrowError;
 
@@ -140,16 +137,11 @@ export default function CheckoutPage() {
       window.snap.pay(token, {
         onSuccess: async function (result: any) {
           // In a real app, a webhook handles this to prevent tampering.
-          // For sandbox demo, we simulate success from the frontend.
-          await supabase.from('escrow_transactions').update({
-            status: 'on_hold',
-            payment_type: result.payment_type,
-            paid_at: new Date().toISOString()
-          }).eq('order_id', orderId);
-          
-          await supabase.from('orders').update({
-            status: 'on_hold'
-          }).eq('id', orderId);
+          // For sandbox demo, we securely trigger the transition via RPC.
+          await supabase.rpc('complete_escrow_sandbox', {
+            p_order_id: orderId,
+            p_payment_type: result.payment_type || 'bank_transfer'
+          });
 
           toast.success('Pembayaran berhasil! Dana ditahan di sistem Escrow.');
           navigate('/buyer/orders');

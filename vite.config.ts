@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/midtrans/, ''),
           configure: (proxy, _options) => {
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
+            proxy.on('proxyReq', (proxyReq, _req, _res) => {
               const serverKey = env.MIDTRANS_SERVER_KEY;
               if (serverKey) {
                 const encodedKey = Buffer.from(serverKey + ':').toString('base64');
