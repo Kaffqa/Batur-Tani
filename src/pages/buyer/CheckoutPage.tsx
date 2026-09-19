@@ -94,7 +94,7 @@ export default function CheckoutPage() {
       if (orderError) throw orderError;
       const orderId = orderData.id;
 
-      // 2. Create Midtrans Transaction (via Vite Proxy)
+      // 2. Create Midtrans Transaction (via Supabase Edge Function)
       const payload = {
         transaction_details: {
           order_id: `BATUR-${orderId.substring(0, 8)}-${Date.now()}`,
@@ -102,25 +102,19 @@ export default function CheckoutPage() {
         },
         credit_card: { secure: true },
         customer_details: {
-          first_name: "Buyer", // In a real app, pass buyer details
+          first_name: "Buyer",
           email: user.email,
         }
       };
 
-      const response = await fetch('/api/midtrans/snap/v1/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
+      const { data: snapData, error: snapError } = await supabase.functions.invoke('create-snap-token', {
+        body: payload,
       });
 
-      if (!response.ok) {
-        throw new Error('Gagal menghubungi layanan pembayaran (Midtrans).');
+      if (snapError || !snapData?.token) {
+        throw new Error(snapData?.error || 'Gagal menghubungi layanan pembayaran (Midtrans).');
       }
 
-      const snapData = await response.json();
       const token = snapData.token;
 
       // 3. Save Escrow record securely via RPC
