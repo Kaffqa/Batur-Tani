@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Cloud, ThermometerSnowflake, Droplets, Wind, Activity, AlertTriangle, Info, CloudRain, Sun } from 'lucide-react';
+import { Cloud, ThermometerSnowflake, Droplets, Wind, Activity, AlertTriangle, Info, CloudRain, Sun, AlertCircle, CheckCircle2 } from 'lucide-react';
 import WeatherSkeleton from '@/components/skeletons/WeatherSkeleton';
 import { fetchCurrentWeather, fetchWeatherForecast, analyzeWeatherRisk } from '@/lib/weather';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
 
 export default function FarmerWeatherPage() {
   const { user, profile } = useAuth();
@@ -14,6 +13,7 @@ export default function FarmerWeatherPage() {
   const [telemetry, setTelemetry] = useState<any[]>([]);
   const [forecast, setForecast] = useState<any[]>([]);
   const [risk, setRisk] = useState<any>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const [currentWeather, setCurrentWeather] = useState<any>(null);
 
@@ -57,7 +57,8 @@ export default function FarmerWeatherPage() {
         .limit(24);
 
       // Format for Recharts
-      if (telemetryData) {
+      if (telemetryData && telemetryData.length > 0) {
+        setLastUpdate(new Date(telemetryData[0].created_at));
         // Reverse so that the chart plots from oldest to newest (left to right)
         const sortedData = telemetryData.reverse();
         const formatted = sortedData.map((d: any) => ({
@@ -199,10 +200,50 @@ export default function FarmerWeatherPage() {
 
         {/* Chart Section */}
         <div className="glass rounded-2xl p-6 border border-slate-700/50">
-          <div className="flex items-center gap-3 mb-6">
-            <Activity className="w-6 h-6 text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-100">Telemetri IoT Lahan (24 Jam Terakhir)</h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <Activity className="w-6 h-6 text-emerald-400" />
+              <h2 className="text-xl font-bold text-slate-100">Telemetri IoT Lahan (24 Jam Terakhir)</h2>
+            </div>
+            
+            {/* Online / Offline Status Badge */}
+            {lastUpdate && (
+              <div className="flex-shrink-0">
+                {(() => {
+                  const now = new Date();
+                  const diffMs = now.getTime() - lastUpdate.getTime();
+                  const diffMins = Math.floor(diffMs / 60000);
+                  const isOffline = diffMins > 30; // Offline jika > 30 menit tidak kirim data
+                  
+                  let timeText = 'Baru saja';
+                  if (diffMins >= 1 && diffMins < 60) timeText = `${diffMins} menit yang lalu`;
+                  else if (diffMins >= 60 && diffMins < 1440) timeText = `${Math.floor(diffMins / 60)} jam yang lalu`;
+                  else if (diffMins >= 1440) timeText = `${Math.floor(diffMins / 1440)} hari yang lalu`;
+
+                  return isOffline ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium animate-pulse">
+                      <AlertCircle className="w-4 h-4" />
+                      Offline (Mati sejak {timeText})
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Online (Update: {timeText})
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
+          
+          {lastUpdate && (new Date().getTime() - lastUpdate.getTime()) / 60000 > 30 && (
+            <div className="mb-6 p-3 rounded-xl bg-red-900/20 border border-red-500/20 text-sm text-red-300 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <p>
+                <strong>Perhatian:</strong> Perangkat IoT Anda terputus. Grafik di bawah ini menampilkan rekaman data lama sebelum perangkat mati. Periksa koneksi listrik dan WiFi (hotspot) di lahan Anda.
+              </p>
+            </div>
+          )}
           
           {telemetry.length > 0 ? (
             <div className="h-80 w-full text-sm">

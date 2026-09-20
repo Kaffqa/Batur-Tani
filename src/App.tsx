@@ -22,6 +22,7 @@ import BuyerOrdersPage from '@/pages/buyer/BuyerOrdersPage';
 import BuyerHistoryPage from '@/pages/buyer/BuyerHistoryPage';
 import FinancePage from '@/pages/farmer/FinancePage';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import HelpPage from '@/pages/shared/HelpPage';
 
 // ------------------------------------------------------------
 // Route Guards
@@ -176,6 +177,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/farmer/help"
+        element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+            <HelpPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Buyer Routes */}
       <Route
@@ -223,6 +232,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['buyer']}>
             <BuyerHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/buyer/help"
+        element={
+          <ProtectedRoute allowedRoles={['buyer']}>
+            <HelpPage />
           </ProtectedRoute>
         }
       />

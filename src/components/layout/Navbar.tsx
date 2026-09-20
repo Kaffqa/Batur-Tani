@@ -73,14 +73,16 @@ export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
                   </div>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<LogOut className="h-4 w-4" />}
-                  onClick={handleLogout}
-                >
-                  Keluar
-                </Button>
+                {!isDashboard && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<LogOut className="h-4 w-4" />}
+                    onClick={handleLogout}
+                  >
+                    Keluar
+                  </Button>
+                )}
               </>
             ) : (
               <>
@@ -136,15 +138,17 @@ export default function Navbar({ isDashboard = false }: NavbarProps = {}) {
                   </Badge>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<LogOut className="h-4 w-4" />}
-                onClick={handleLogout}
-                className="w-full justify-start"
-              >
-                Keluar
-              </Button>
+              {!isDashboard && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<LogOut className="h-4 w-4" />}
+                  onClick={handleLogout}
+                  className="w-full justify-start"
+                >
+                  Keluar
+                </Button>
+              )}
             </>
           ) : (
             <div className="flex flex-col gap-2">
