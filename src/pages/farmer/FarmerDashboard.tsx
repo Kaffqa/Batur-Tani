@@ -45,20 +45,12 @@ const severityColors: Record<Severity, string> = {
 // ── Main Component ──
 
 export default function FarmerDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   const farmerName = profile?.full_name || 'Petani';
   
-  // Local state for weather coordinates so it updates immediately when changed
-  const [lat, setLat] = useState<number>(-7.23);
-  const [lon, setLon] = useState<number>(109.9);
-
-  useEffect(() => {
-    if (profile?.latitude && profile?.longitude) {
-      setLat(profile.latitude);
-      setLon(profile.longitude);
-    }
-  }, [profile]);
+  const activeLat = profile?.latitude ?? -7.23;
+  const activeLon = profile?.longitude ?? 109.9;
 
   const today = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -159,14 +151,17 @@ export default function FarmerDashboard() {
   const handleUpdateLocation = async (newLat: number, newLon: number) => {
     if (!user) return;
     try {
-      setLat(newLat);
-      setLon(newLon);
       const { error } = await supabase
         .from('profiles')
         .update({ latitude: newLat, longitude: newLon })
         .eq('id', user.id);
       
       if (error) throw error;
+      
+      // Delay to ensure Supabase commit finishes before refetching profile
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await refreshProfile(); // Refresh context so other pages sync
+      
       toast.success('Lokasi berhasil diperbarui!');
     } catch (error) {
       console.error('Error updating location:', error);
@@ -218,8 +213,8 @@ export default function FarmerDashboard() {
         {/* Weather widget */}
         <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <WeatherWidget 
-            latitude={lat} 
-            longitude={lon} 
+            latitude={activeLat} 
+            longitude={activeLon} 
             farmerId={user?.id}
             onUpdateLocation={handleUpdateLocation}
           />

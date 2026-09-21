@@ -38,6 +38,8 @@ interface AuthContextValue {
   ) => Promise<void>;
   /** Sign out the current user */
   signOut: () => Promise<void>;
+  /** Refresh the user profile from the database */
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -221,6 +223,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Render
   // ----------------------------------------------------------
 
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
+
   const value: AuthContextValue = {
     user,
     profile,
@@ -228,6 +236,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signIn,
     signUp,
     signOut,
+    refreshProfile,
   };
 
   return (

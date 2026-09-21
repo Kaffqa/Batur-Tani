@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Cloud, ThermometerSnowflake, Droplets, Wind, Activity, AlertTriangle, Info, CloudRain, Sun, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Cloud, ThermometerSnowflake, Droplets, Wind, Activity, AlertTriangle, Info, CloudRain, Sun, AlertCircle, CheckCircle2, MapPin, X } from 'lucide-react';
 import WeatherSkeleton from '@/components/skeletons/WeatherSkeleton';
 import { fetchCurrentWeather, fetchWeatherForecast, analyzeWeatherRisk } from '@/lib/weather';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import toast from 'react-hot-toast';
 
 export default function FarmerWeatherPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [telemetry, setTelemetry] = useState<any[]>([]);
   const [forecast, setForecast] = useState<any[]>([]);
@@ -17,38 +18,88 @@ export default function FarmerWeatherPage() {
 
   const [currentWeather, setCurrentWeather] = useState<any>(null);
 
-  const [lat, setLat] = useState<number>(-7.23);
-  const [lon, setLon] = useState<number>(109.9);
+  const activeLat = profile?.latitude ?? -7.23;
+  const activeLon = profile?.longitude ?? 109.9;
 
-  useEffect(() => {
-    if (profile?.latitude && profile?.longitude) {
-      setLat(profile.latitude);
-      setLon(profile.longitude);
-    }
-  }, [profile]);
+  // New states for location edit and data source
+  const [locationName, setLocationName] = useState<string>('Memuat lokasi...');
+  const [isEditingLoc, setIsEditingLoc] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [dataSource, setDataSource] = useState<'satellite'|'iot'>('satellite');
 
   useEffect(() => {
     if (user && profile) {
-      loadData();
+      loadData(activeLat, activeLon);
     }
-  }, [user, profile]);
+  }, [user, profile, activeLat, activeLon]); 
 
+  // Reverse Geocoding
+  useEffect(() => {
+    async function loadLocation() {
+      try {
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${activeLat}&longitude=${activeLon}&localityLanguage=id&_t=${Date.now()}`);
+        const data = await res.json();
+        const city = data.city || data.locality || data.principalSubdivision || 'Area Tidak Dikenali';
+        setLocationName(city);
+      } catch (err) {
+        setLocationName('Area Tidak Dikenali');
+      }
+    }
+    loadLocation();
+  }, [activeLat, activeLon]);
 
+  // Forward Geocoding (Search)
+  useEffect(() => {
+    if (!isEditingLoc || searchQuery.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchQuery)}&count=5&language=id&format=json`);
+        const data = await res.json();
+        setSuggestions(data.results || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, isEditingLoc]);
 
-  const loadData = async () => {
+  const handleUpdateLocation = async (newLat: number, newLon: number) => {
+    if (!user) return;
+    try {
+      setIsEditingLoc(false);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ latitude: newLat, longitude: newLon })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      await refreshProfile(); 
+      
+      toast.success('Lokasi pantauan cuaca berhasil diperbarui!');
+    } catch (error) {
+      console.error('Error updating location:', error);
+      toast.error('Gagal menyimpan lokasi.');
+    }
+  };
+
+  const loadData = async (currentLat: number, currentLon: number) => {
     setLoading(true);
     try {
-      const currentLat = profile?.latitude || -7.2036;
-      const currentLon = profile?.longitude || 109.9048;
-
-      // 1. Fetch Forecast & Risk
+      // 1. Fetch Forecast & Risk (from Satellite)
       const current = await fetchCurrentWeather(currentLat, currentLon);
-      setCurrentWeather(current);
       const forecastData = await fetchWeatherForecast(currentLat, currentLon, 7);
-      setForecast(forecastData);
-      setRisk(analyzeWeatherRisk(current, forecastData));
 
-      // 2. Fetch Telemetry History
+      // 2. Fetch Telemetry History (from IoT)
       const { data: telemetryData } = await supabase
         .from('sensor_telemetry')
         .select('*')
@@ -56,11 +107,14 @@ export default function FarmerWeatherPage() {
         .order('created_at', { ascending: false })
         .limit(24);
 
+      let isIoTActive = false;
+      let finalCurrent = { ...current };
+
       // Format for Recharts
       if (telemetryData && telemetryData.length > 0) {
         setLastUpdate(new Date(telemetryData[0].created_at));
         // Reverse so that the chart plots from oldest to newest (left to right)
-        const sortedData = telemetryData.reverse();
+        const sortedData = [...telemetryData].reverse();
         const formatted = sortedData.map((d: any) => ({
           time: new Date(d.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
           suhu: d.temperature,
@@ -69,7 +123,23 @@ export default function FarmerWeatherPage() {
           cahaya: d.light_intensity
         }));
         setTelemetry(formatted);
+
+        // Check if IoT is recently active (last 60 mins)
+        const diffMs = new Date().getTime() - new Date(telemetryData[0].created_at).getTime();
+        if (diffMs < 60 * 60 * 1000) {
+           isIoTActive = true;
+           finalCurrent.temperature = telemetryData[0].temperature;
+           finalCurrent.humidity = telemetryData[0].humidity;
+           finalCurrent.soilMoisture = telemetryData[0].soil_moisture;
+        }
+      } else {
+        setTelemetry([]);
       }
+
+      setDataSource(isIoTActive ? 'iot' : 'satellite');
+      setCurrentWeather(finalCurrent);
+      setForecast(forecastData);
+      setRisk(analyzeWeatherRisk(finalCurrent, forecastData));
 
     } catch (error) {
       console.error(error);
@@ -84,7 +154,7 @@ export default function FarmerWeatherPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in pb-12">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-50 flex items-center gap-3">
             <Cloud className="w-8 h-8 text-emerald-400" />
@@ -93,6 +163,80 @@ export default function FarmerWeatherPage() {
           <p className="text-slate-400 mt-1">
             Pantau anomali cuaca, telemetri lahan, dan dapatkan rekomendasi cerdas.
           </p>
+        </div>
+
+        {/* Location & Data Source Control Bar */}
+        <div className="glass rounded-2xl p-4 md:p-5 border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-50">
+          <div className="relative flex-1 max-w-md">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-400 mb-1 uppercase tracking-widest font-bold">Titik Pantau Lokasi</span>
+              {isEditingLoc ? (
+                <div className="flex items-center gap-2 relative z-20">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:ring-1 focus:ring-emerald-500 outline-none"
+                    placeholder="Ketik nama kota/kecamatan..."
+                    autoFocus
+                  />
+                  <button onClick={() => setIsEditingLoc(false)} className="p-2 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-700 hover:text-white shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                  
+                  {searchQuery.length >= 3 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
+                      {isSearching ? (
+                        <div className="px-4 py-3 text-sm text-slate-400">Mencari lokasi...</div>
+                      ) : suggestions.length > 0 ? (
+                        suggestions.map((s, idx) => (
+                          <button
+                            key={idx}
+                            className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-emerald-500/10 hover:text-emerald-400 flex flex-col border-b border-slate-700/50 last:border-0"
+                            onClick={() => handleUpdateLocation(s.latitude, s.longitude)}
+                          >
+                            <span className="font-semibold">{s.name}</span>
+                            <span className="text-xs text-slate-400 mt-0.5">{s.admin1 ? `${s.admin1}, ` : ''}{s.country}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-slate-400">Lokasi tidak ditemukan</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-100 group-hover:text-emerald-400 transition-colors line-clamp-1">{locationName}</h2>
+                    <p className="text-xs text-slate-500 font-mono">{activeLat.toFixed(4)}°, {activeLon.toFixed(4)}°</p>
+                  </div>
+                  <button onClick={() => setIsEditingLoc(true)} className="ml-2 shrink-0 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors border border-emerald-500/20">
+                    Ubah Koordinat
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-start md:items-end">
+             <span className="text-[10px] text-slate-400 mb-1 uppercase tracking-widest font-bold">Sumber Data Saat Ini</span>
+             {dataSource === 'iot' ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 text-sm font-bold shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                  </span>
+                  Sensor IoT Lokal
+                </div>
+             ) : (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 text-sm font-bold shadow-lg">
+                  <Cloud className="w-4 h-4 text-slate-400" />
+                  Satelit Open-Meteo
+                </div>
+             )}
+          </div>
         </div>
 
         {/* Custom Weather Hero */}
@@ -115,8 +259,8 @@ export default function FarmerWeatherPage() {
                   )}
                 </div>
                 <div>
-                  <h2 className="text-sm font-medium uppercase tracking-widest text-emerald-400/80 mb-1">
-                    Banyumas Raya
+                  <h2 className="text-sm font-medium uppercase tracking-widest text-emerald-400/80 mb-1 line-clamp-1">
+                    {locationName}
                   </h2>
                   <div className="flex items-baseline gap-2">
                     <span className="text-6xl font-black tracking-tighter text-white">
